@@ -46,7 +46,7 @@ import tensorflow as tf
 tf.get_logger().setLevel('ERROR')
 
 # ── MobileNetV2 deep feature extractor (loaded once at import time) ──
-print("[features.py] Loading MobileNetV2 ...")
+print("[features.py]")
 _MV2_SIZE  = 224    # MobileNetV2 native input size
 _mv2_base  = tf.keras.applications.MobileNetV2(
     input_shape=(_MV2_SIZE, _MV2_SIZE, 3),
@@ -57,7 +57,7 @@ _mv2_base.trainable = False
 _mv2_extractor = tf.keras.Model(
     inputs=_mv2_base.input,
     outputs=_mv2_base.output)
-print("[features.py] MobileNetV2 ready — 1280-dim output")
+print("[features.py] ready — 1280-dim output")
 
 # ─────────────────────────────────────────────
 # CONFIG
