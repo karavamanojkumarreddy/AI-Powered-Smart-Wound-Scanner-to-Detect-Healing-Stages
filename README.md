@@ -1,13 +1,210 @@
-🩺 AI-Powered Smart Wound Scanner: Project Documentation📌 Project OverviewThis project is an Explainable AI system designed to objectively detect and categorize the healing stages of wounds using advanced image processing and machine learning.In clinical settings, "looking" at a wound is subjective. This system replaces visual guesswork with mathematical certainty by converting a photograph into a standardized Feature Vector.The Core Logic: Raw Image $\rightarrow$ Mathematical Features $\rightarrow$ Diagnostic Decision.🎯 The Problem & The SolutionThe Problem: Traditional wound assessment relies on human sight, which is:Subjective: Varies based on a doctor’s individual experience.Inconsistent: Two specialists might grade the same wound differently.Manual: Tracking progress over weeks is difficult without hard numbers.The Solution: This scanner provides an automated, consistent, and fast diagnosis tool that works on standard hardware (CPUs/Smartphones), making it ideal for rural or remote healthcare.⚙️ The Technical PipelineThe system processes data through five distinct, transparent modules:Input Image AcquisitionHigh-resolution 2D images captured via smartphone or medical camera.Standardized PreprocessingResizing: All images are mapped to $256 \times 256$ pixels for computational efficiency.Standardization: Pixel values are normalized to ensure lighting variations don't confuse the model.Classical Filtering: Basic noise reduction (like Median Filtering) is used to smooth the image without losing edge data.Segmentation (K-Means Clustering)Converts RGB to $L^*a^*b^*$ Color Space to isolate color from brightness.Uses unsupervised clustering to separate the "Wound" from "Healthy Skin."Handcrafted Feature ExtractionGeometry: Calculates total Area ($cm^2$), Perimeter, and Circularity.Color: Analyzes Redness Index ($a^*$) and tissue composition (Granulation vs. Slough).Texture: Uses GLCM and LBP to determine surface roughness.Ensemble ClassificationUses a weighted SVM (RBF Kernel) as the primary expert.Supported by Random Forest and Gradient Boosting to ensure the decision is robust and not "overfitted."Web-Based DashboardProvides a clean UI showing the stage, physical measurements, and automated clinical suggestions.📊 Performance BenchmarksThe system was tested against a diverse dataset of wound images, achieving near-clinical grade accuracy.MetricValueInterpretationAccuracy97.50%Overall correctness across all stages.Precision97.53%Trustworthiness; very few "False Alarms."Recall97.50%Safety; the system almost never misses a real case.F1-Score97.49%The perfect balance between Precision and Recall.🏗️ Project ArchitecturePlaintextAI-Wound-Scanner/
-├── dataset/                  # Categorized wound images (Inflammation, etc.)
-├── ml/                       # The "Brain" of the project
-│   ├── preprocessing.py      # Resizing and Filtering
-│   ├── segmentation.py       # K-Means and Mask Generation
-│   ├── feature_extraction.py # Shape, Color, and Texture logic
-│   └── classifier.py         # SVM + Ensemble Model
-├── app/                      # Flask Web Application
-│   ├── app.py                # Main server script
-│   ├── templates/            # HTML Dashboard
-│   └── static/               # CSS and Processed Images
-└── requirements.txt          # Libraries (OpenCV, Scikit-learn, etc.)
-🧩 Why This Project is Strong (For Viva)Explainable AI (XAI): Unlike "Black Box" deep learning, we can explain exactly why a wound was classified as "Inflamed" by pointing to its redness and texture values.High Efficiency: Processes images in ~0.3 seconds.Hardware Independent: Runs on basic CPUs; no expensive GPUs or cloud servers required.Clinical Utility: Directly assists in tracking healing progress over time using the "Area Calculation" feature.👨‍💻 AuthorK. Manoj Kumar Reddy B.Tech – Electronics & Communication Engineering (2026)
+# 🩺 AI-Powered Smart Wound Scanner
+
+## 📌 Project Overview
+
+This project is an **AI-based system** designed to automatically detect the **healing stage of wounds** using image processing and machine learning.
+
+Instead of relying on human judgment, the system converts a wound image into **measurable data** and makes a **consistent, objective decision**.
+
+👉 In simple terms:
+**Image → Numbers → Decision**
+
+---
+
+## 🎯 Problem Statement
+
+Traditional wound assessment is:
+
+* Subjective (depends on doctor experience)
+* Inconsistent (different doctors give different results)
+* Manual and time-consuming
+
+This project solves that by providing:
+✔ Automated analysis
+✔ Consistent results
+✔ Fast diagnosis
+
+---
+
+## ⚙️ System Pipeline
+
+The system works in 6 steps:
+
+1. **Input Image**
+
+   * Wound image captured using a smartphone
+
+2. **Preprocessing**
+
+   * Resize image (256×256)
+   * Normalize pixel values
+   * Reduce noise
+
+3. **K-Means Clustering (Segmentation)**
+
+   * Separates wound from healthy skin
+   * Uses LAB color space
+
+4. **Feature Extraction**
+
+   * Wound Area
+   * Red Tissue % (healing)
+   * Yellow Tissue % (damage)
+
+5. **Classification (SVM + Ensemble)**
+
+   * Uses SVM with RBF kernel
+   * Supported by Random Forest & Gradient Boosting
+
+6. **Web Dashboard Output**
+
+   * Displays:
+
+     * Healing Stage
+     * Wound Measurements
+     * Clinical Suggestions
+
+---
+
+## 🧠 Healing Stages Classified
+
+The model predicts:
+
+* 🔴 **Inflammation** (early stage)
+* 🟢 **Proliferation** (healing stage)
+* ⚪ **Maturation** (final stage)
+
+---
+
+## 📊 Performance
+
+| Metric    | Value     |
+| --------- | --------- |
+| Accuracy  | **97.5%** |
+| Precision | 97.53%    |
+| Recall    | 97.50%    |
+| F1-Score  | 97.49%    |
+
+✔ High accuracy
+✔ Balanced performance
+✔ Reliable predictions
+
+---
+
+## 🧪 Technologies Used
+
+* Python
+* OpenCV
+* NumPy
+* Scikit-learn
+* Flask
+
+---
+
+## 🏗️ Project Structure
+
+```
+AI-Wound-Scanner/
+│
+├── dataset/
+├── ml/
+│   ├── preprocessing.py
+│   ├── kmeans.py
+│   ├── feature_extraction.py
+│   ├── svm.py
+│
+├── app/
+│   ├── app.py
+│   ├── templates/
+│   ├── static/
+│
+├── results/
+├── README.md
+└── requirements.txt
+```
+
+---
+
+## 🚀 How to Run the Project
+
+### Step 1: Clone Repository
+
+```bash
+git clone https://github.com/yourusername/AI-Wound-Scanner.git
+cd AI-Wound-Scanner
+```
+
+### Step 2: Install Requirements
+
+```bash
+pip install -r requirements.txt
+```
+
+### Step 3: Run Application
+
+```bash
+python app.py
+```
+
+### Step 4: Open in Browser
+
+```
+http://127.0.0.1:5000
+```
+
+---
+
+## 🧩 Key Features
+
+✔ Automated wound detection
+✔ Explainable AI (not black-box)
+✔ Fast processing (~0.3 sec)
+✔ Works on CPU (no GPU required)
+✔ Suitable for rural healthcare
+
+---
+
+## ⚠️ Limitations
+
+* Works on 2D images only
+* Proliferation stage is harder to classify
+* Depends on image quality
+
+---
+
+## 🔮 Future Scope
+
+* 3D wound measurement
+* Mobile app (Android/iOS)
+* IoT-based smart bandages
+* Cloud deployment
+* Larger dataset training
+
+---
+
+## 🏥 Real-World Impact
+
+* Reduces human error
+* Improves diagnosis speed
+* Supports doctors in decision-making
+* Enables remote healthcare
+
+---
+
+## 👨‍💻 Author
+
+**K. Manoj Kumar Reddy**
+B.Tech – Electronics & Communication Engineering
+
+---
+
+## 📌 Final Thought
+
+This project shows that:
+👉 **Simple + Explainable AI > Complex Black Box (for healthcare)**
+
+---
+
+## ⭐ If you like this project
+
+Give it a ⭐ on GitHub!
