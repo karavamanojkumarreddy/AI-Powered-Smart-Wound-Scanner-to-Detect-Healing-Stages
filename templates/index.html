@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WoundAI // Professional Clinical Suite</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.0/lucide.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --lav:#6968A6;--rose:#cf9893;
+  --txt:#f8fafc;--dim:#cbd5e1;
+  --bdr:rgba(255,255,255,.15);
+  --card:rgba(255,255,255,.07);
+  --ok:#4ade80;--err:#fb7185;
+  --velvet:linear-gradient(135deg,#4b0082,#800020,#ff4500,#ff8c00);
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Inter',sans-serif;}
+body{background:radial-gradient(circle at top left,#6968A6,#085078);
+     background-attachment:fixed;color:var(--txt);display:flex;height:100vh;overflow:hidden;}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+/* ── Sidebar ── */
+nav{width:270px;flex-shrink:0;background:rgba(15,23,42,.88);
+    backdrop-filter:blur(20px);border-right:1px solid var(--bdr);
+    display:flex;flex-direction:column;padding:36px 18px;z-index:10;}
+.logo{font-size:1.35rem;font-weight:800;color:var(--rose);
+      display:flex;align-items:center;gap:11px;margin-bottom:44px;}
+.ni{padding:13px 17px;border-radius:12px;color:var(--dim);margin-bottom:7px;
+    display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .3s;font-size:.93rem;}
+.ni:hover{background:rgba(255,255,255,.09);color:var(--txt);transform:translateX(4px);}
+.ni.on{background:var(--lav);color:#fff;box-shadow:0 8px 20px rgba(105,104,166,.4);}
+.nbadge{margin-left:auto;background:var(--rose);color:#fff;
+        font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:10px;}
+.nfoot{margin-top:auto;font-size:.72rem;color:var(--dim);
+       padding:15px;background:rgba(255,255,255,.05);border-radius:13px;line-height:1.9;}
+
+/* ── Main ── */
+main{flex:1;padding:36px;overflow-y:auto;}
+.pg{display:none;animation:fadeIn .4s ease-out;}
+.pg.on{display:block;}
+h1{font-size:2rem;font-weight:800;margin-bottom:26px;letter-spacing:-1px;}
+
+/* ── Grid ── */
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:24px;}
+
+/* ── Card ── */
+.card{background:var(--card);backdrop-filter:blur(14px);
+      border:1px solid var(--bdr);border-radius:22px;padding:26px;
+      margin-bottom:22px;transition:transform .3s,box-shadow .3s;}
+.card:hover{transform:translateY(-3px);box-shadow:0 16px 32px rgba(0,0,0,.28);border-color:var(--rose);}
+.card h3{margin-bottom:17px;display:flex;align-items:center;gap:9px;
+         color:var(--rose);font-size:.97rem;font-weight:700;}
+
+/* ── Inputs ── */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.inp{background:rgba(15,23,42,.52);border:1px solid var(--bdr);
+     padding:12px 14px;color:#fff;border-radius:11px;width:100%;
+     outline:none;margin-bottom:10px;transition:.3s;font-size:.88rem;}
+.inp:focus{border-color:var(--rose);background:rgba(15,23,42,.8);}
+.inp::placeholder{color:rgba(255,255,255,.32);}
+
+/* ── THE UPLOAD BOX ── */
+/*
+  This single box does everything:
+  - Before pick:  shows camera icon + text
+  - After pick:   shows the wound image + filename overlay
+  Click it anytime to pick/change image.
+*/
+#imgbox{
+  margin-top:14px;
+  border:2px dashed var(--lav);
+  border-radius:16px;
+  min-height:220px;
+  cursor:pointer;
+  background:rgba(255,255,255,.04);
+  transition:.3s;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+#imgbox:hover{border-color:var(--rose);background:rgba(105,104,166,.12);}
+
+/* Prompt shown before image selected */
+#imgprompt{
+  text-align:center;
+  padding:28px 16px;
+  pointer-events:none;
+  width:100%;
+}
+#imgprompt .ico{
+  width:56px;height:56px;background:rgba(105,104,166,.25);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 14px;font-size:26px;
+}
+#imgprompt .t1{font-size:.95rem;font-weight:600;margin-bottom:6px;}
+#imgprompt .t2{font-size:.76rem;opacity:.6;}
+#imgprompt .t3{font-size:.78rem;color:var(--rose);margin-top:8px;font-weight:500;}
+
+/* Uploaded image — covers the box */
+#woundimg{
+  position:absolute;
+  top:0;left:0;
+  width:100%;
+  height:220px;
+  object-fit:cover;
+  display:none;
+  border-radius:14px;
+}
+
+/* Filename overlay at bottom of box */
+#fnbar{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(transparent,rgba(0,0,0,.85));
+  padding:10px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  z-index:5;
+}
+#fntext{font-size:.78rem;color:#fff;font-weight:500;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:75%;}
+#changebtn{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);
+           color:#fff;padding:5px 12px;border-radius:20px;
+           font-size:.72rem;cursor:pointer;pointer-events:all;}
+
+/* ── Buttons ── */
+.btn{width:100%;margin-top:14px;padding:14px;
+     border:2px solid var(--rose);color:#fff;
+     background:rgba(207,152,147,.16);border-radius:11px;
+     font-weight:700;cursor:pointer;transition:.3s;
+     display:block;text-align:center;font-size:.92rem;text-decoration:none;}
+.btn:hover{background:var(--rose);box-shadow:0 0 22px rgba(207,152,147,.5);transform:scale(1.02);}
+.lav{border-color:var(--lav);background:rgba(105,104,166,.14);}
+.lav:hover{background:var(--lav);box-shadow:0 0 22px rgba(105,104,166,.5);}
+
+/* Analyse button glow when ready */
+#abtn.ready{
+  background:var(--rose) !important;
+  border-color:#fff !important;
+  box-shadow:0 0 26px rgba(207,152,147,.75) !important;
+  opacity:1 !important;
+}
+
+/* ── Loader ── */
+#loader{text-align:center;padding:16px 0;font-size:.87rem;color:var(--dim);}
+.spin{width:30px;height:30px;border:3px solid rgba(255,255,255,.14);
+      border-top-color:var(--rose);border-radius:50%;
+      animation:spin .72s linear infinite;margin:0 auto 10px;}
+
+/* ── Hospital buttons ── */
+.hbtn{width:100%;padding:12px 16px;border-radius:11px;cursor:pointer;
+      font-size:.86rem;font-weight:600;transition:.25s;text-align:left;
+      display:flex;align-items:center;gap:10px;border:1.5px solid;}
+.hbtn.gov{background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.35);color:var(--txt);}
+.hbtn.gov:hover{background:rgba(74,222,128,.2);border-color:var(--ok);
+                transform:translateY(-1px);box-shadow:0 4px 14px rgba(74,222,128,.2);}
+.hbtn.pvt{background:rgba(207,152,147,.08);border-color:rgba(207,152,147,.35);color:var(--txt);}
+.hbtn.pvt:hover{background:rgba(207,152,147,.2);border-color:var(--rose);
+                transform:translateY(-1px);box-shadow:0 4px 14px rgba(207,152,147,.2);}
+
+/* ── Error ── */
+#ebox{background:rgba(251,113,133,.12);border:1px solid var(--err);
+      border-radius:9px;padding:11px 15px;color:#fca5a5;
+      font-size:.83rem;margin-top:11px;}
+
+/* ── Result panel ── */
+.ph{display:flex;align-items:flex-start;gap:13px;
+    padding:16px;border-radius:14px;margin-bottom:15px;}
+.pic{font-size:38px;flex-shrink:0;line-height:1;}
+.pcls{font-size:1.85rem;font-weight:800;line-height:1.1;}
+.pconf{font-size:.78rem;margin-top:5px;opacity:.82;}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px;}
+.sb{background:rgba(0,0,0,.22);padding:13px;border-radius:11px;border:1px solid var(--bdr);}
+.sl{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.sv{font-weight:600;font-size:.9rem;}
+.pr{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.plb{width:110px;font-size:.78rem;color:var(--dim);flex-shrink:0;}
+.pt{flex:1;height:9px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden;}
+.pf{height:100%;border-radius:5px;transition:width .75s ease;}
+.pp{font-size:.76rem;width:42px;text-align:right;flex-shrink:0;color:var(--dim);}
+.stb{border-radius:12px;padding:13px 15px;margin-top:13px;font-size:.82rem;line-height:1.65;}
+.str{display:flex;gap:8px;margin-bottom:5px;}
+.stl{font-weight:700;min-width:58px;flex-shrink:0;}
+.emp{height:320px;display:flex;flex-direction:column;align-items:center;
+     justify-content:center;border:2px dashed var(--bdr);
+     border-radius:17px;background:rgba(0,0,0,.1);}
+
+/* ── Chat ── */
+.cb{height:420px;overflow-y:auto;background:rgba(0,0,0,.22);
+    border-radius:17px;padding:18px;display:flex;
+    flex-direction:column;gap:14px;border:1px solid var(--bdr);}
+.cb::-webkit-scrollbar{width:5px;}
+.cb::-webkit-scrollbar-track{background:transparent;}
+.cb::-webkit-scrollbar-thumb{background:var(--lav);border-radius:10px;}
+
+/* Bot message */
+.bm{background:linear-gradient(135deg,rgba(105,104,166,.45),rgba(105,104,166,.25));
+    padding:13px 16px;border-radius:4px 16px 16px 16px;
+    align-self:flex-start;max-width:88%;font-size:.86rem;line-height:1.65;
+    border:1px solid rgba(105,104,166,.3);box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.bm b{color:#d4d0ff;}
+
+/* User message */
+.um{background:linear-gradient(135deg,rgba(207,152,147,.5),rgba(207,152,147,.3));
+    padding:13px 16px;border-radius:16px 4px 16px 16px;
+    align-self:flex-end;max-width:80%;font-size:.86rem;line-height:1.55;
+    border:1px solid rgba(207,152,147,.35);box-shadow:0 2px 8px rgba(0,0,0,.2);}
+
+/* Typing indicator */
+.typing{display:flex;gap:5px;align-items:center;padding:12px 16px;
+        background:rgba(105,104,166,.2);border-radius:4px 16px 16px 16px;
+        align-self:flex-start;width:60px;}
+.typing span{width:7px;height:7px;background:var(--lav);border-radius:50%;
+             animation:bounce .9s infinite;}
+.typing span:nth-child(2){animation-delay:.2s;}
+.typing span:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.chip{padding:8px 14px;background:rgba(105,104,166,.18);
+      border:1px solid rgba(105,104,166,.4);border-radius:20px;
+      font-size:.76rem;cursor:pointer;transition:.25s;color:var(--txt);}
+.chip:hover{background:rgba(105,104,166,.45);border-color:var(--lav);
+            transform:translateY(-1px);box-shadow:0 4px 12px rgba(105,104,166,.3);}
+
+/* Chat input row */
+.chat-row{display:flex;gap:9px;margin-top:14px;align-items:center;}
+.chat-inp{flex:1;background:rgba(15,23,42,.55);border:1px solid var(--bdr);
+          padding:13px 16px;color:#fff;border-radius:12px;outline:none;
+          font-size:.88rem;transition:.3s;}
+.chat-inp:focus{border-color:var(--lav);background:rgba(15,23,42,.8);}
+.chat-inp::placeholder{color:rgba(255,255,255,.32);}
+.send-btn{background:var(--lav);border:none;color:#fff;padding:13px 20px;
+          border-radius:12px;cursor:pointer;font-weight:700;font-size:.88rem;
+          transition:.25s;white-space:nowrap;flex-shrink:0;}
+.send-btn:hover{background:#5756a0;box-shadow:0 0 18px rgba(105,104,166,.5);}
+
+/* ── Hospital buttons ── */
+.hbtn{width:100%;padding:11px 14px;background:rgba(74,222,128,.1);
+      border:1px solid rgba(74,222,128,.3);color:var(--txt);
+      border-radius:10px;cursor:pointer;font-size:.8rem;
+      font-weight:600;transition:.25s;text-align:left;}
+.hbtn:hover{background:rgba(74,222,128,.25);border-color:var(--ok);
+            transform:translateY(-1px);box-shadow:0 4px 12px rgba(74,222,128,.2);}
+.hbtn-priv{background:rgba(207,152,147,.1);border-color:rgba(207,152,147,.3);}
+.hbtn-priv:hover{background:rgba(207,152,147,.25);border-color:var(--rose);
+                 box-shadow:0 4px 12px rgba(207,152,147,.2);}
+
+/* ── Table ── */
+table{width:100%;border-collapse:separate;border-spacing:0 8px;}
+th{padding:12px 15px;text-align:left;color:var(--rose);font-weight:700;font-size:.82rem;}
+td{padding:12px 15px;background:rgba(255,255,255,.04);font-size:.85rem;}
+td:first-child{border-radius:10px 0 0 10px;}
+td:last-child{border-radius:0 10px 10px 0;}
+.badge{padding:5px 11px;border-radius:16px;background:rgba(105,104,166,.28);
+       color:#fff;border:1px solid var(--lav);font-size:.75rem;font-weight:600;}
+.badge.i{background:rgba(207,152,147,.22);border-color:var(--rose);}
+.badge.p{background:rgba(239,159,39,.18);border-color:#EF9F27;}
+.badge.m{background:rgba(74,222,128,.14);border-color:var(--ok);}
+.hi{display:flex;align-items:center;gap:9px;padding:9px 12px;
+    background:rgba(255,255,255,.05);border-radius:9px;margin-bottom:6px;font-size:.81rem;}
+.hd{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+/* ── Overlays ── */
+#wel{position:fixed;inset:0;background:var(--velvet);
+     display:flex;align-items:center;justify-content:center;z-index:10000;transition:opacity .8s;}
+.wc{text-align:center;color:#fff;animation:fadeIn .9s ease-out;}
+.wc h1{font-size:3.5rem;margin-bottom:10px;text-shadow:0 5px 15px rgba(0,0,0,.4);}
+.wc p{font-size:1.1rem;opacity:.9;margin-bottom:26px;}
+#dis{position:fixed;inset:0;background:rgba(8,80,120,.94);
+     display:none;align-items:center;justify-content:center;
+     z-index:9999;backdrop-filter:blur(10px);}
+.dc{background:rgba(30,41,59,.92);padding:36px;border-radius:26px;
+    max-width:420px;text-align:center;border:1px solid var(--rose);
+    box-shadow:0 24px 48px rgba(0,0,0,.5);}
+</style>
+</head>
+<body>
+
+<!-- WELCOME -->
+<div id="wel">
+  <div class="wc">
+    <i data-lucide="sparkles" style="width:70px;height:70px;margin-bottom:16px;"></i>
+    <h1>Welcome to WoundAI</h1>
+    <p>Advanced Clinical Intelligence for Precision Wound Care</p>
+    <button onclick="dismissWelcome()" class="btn"
+      style="max-width:210px;margin:0 auto;background:#fff;color:#800020;border:none;">
+      Get Started
+    </button>
+  </div>
+</div>
+
+<!-- DISCLAIMER -->
+<div id="dis">
+  <div class="dc">
+    <i data-lucide="shield-alert" style="color:var(--rose);width:54px;height:54px;margin-bottom:16px;"></i>
+    <h2 style="color:var(--rose);margin-bottom:12px;">Medical Disclaimer</h2>
+    <p style="color:var(--dim);line-height:1.65;font-size:.88rem;">
+      This AI analysis is for educational decision support only.
+      Always consult a registered medical practitioner.
+    </p>
+    <button onclick="dismissDisclaimer()" class="btn" style="margin-top:18px;">
+      I Agree &amp; Continue
+    </button>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav>
+  <div class="logo"><i data-lucide="activity"></i> WoundAI.pro</div>
+  <div class="ni on" onclick="goPage(this,'dash')"><i data-lucide="layout-dashboard"></i> Dashboard</div>
+  <div class="ni"    onclick="goPage(this,'asst')"><i data-lucide="message-square"></i> Clinical Assistant</div>
+  <div class="ni"    onclick="goPage(this,'hist')">
+    <i data-lucide="history"></i> Patient History
+    <span class="nbadge" id="hbadge">0</span>
+  </div>
+  <div class="ni"    onclick="goPage(this,'emer')"><i data-lucide="alert-triangle"></i> Emergency</div>
+  <div class="nfoot">
+    <strong>System Lead</strong><br>Karava Manoj Kumar Reddy<br>B.Tech ECE<br>
+    <span style="color:var(--ok);">● Model: 97.5% Accuracy</span>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main>
+
+  <!-- DASHBOARD -->
+  <div id="dash" class="pg on">
+    <h1 style="animation:float 6s ease-in-out infinite;">
+      Clinical Dashboard
+      <span id="clk" style="float:right;font-size:.95rem;color:var(--rose);font-weight:400;"></span>
+    </h1>
+
+    <div class="grid">
+
+      <!-- LEFT CARD -->
+      <div class="card">
+        <h3><i data-lucide="user-plus"></i> Patient Registration</h3>
+
+        <div class="fg">
+          <input class="inp" id="pt-name"   type="text" placeholder="Patient Name">
+          <input class="inp" id="pt-mobile" type="text" placeholder="Mobile Number">
+          <input class="inp" id="pt-age"    type="text" placeholder="Patient Age">
+        </div>
+
+        <!-- STEP 1 & 2: The image box — click to open picker, shows image after pick -->
+        <!--
+          HOW IT WORKS:
+          - The real <input type=file> is hidden (display:none)
+          - Clicking #imgbox triggers openPicker() which calls input.click()
+          - onchange fires → onFileChosen() → shows image inside #imgbox
+        -->
+        <input type="file" id="realfile" style="display:none"
+               onchange="onFileChosen(this)">
+
+        <div id="imgbox" onclick="openPicker()">
+
+          <!-- Shown before image is selected (Step 1) -->
+          <div id="imgprompt">
+            <div class="ico">📷</div>
+            <div class="t1">Click Here to Select Wound Image</div>
+            <div class="t2">or drag &amp; drop your wound photo here</div>
+            <div class="t3">Step 1 → Click &nbsp;|&nbsp; Step 2 → Select image &amp; click Open</div>
+          </div>
+
+          <!-- Shown after image is selected (Step 3) — hidden initially -->
+          <img id="woundimg" src="" alt="wound" style="display:none">
+
+          <!-- Filename + change button overlay — hidden initially -->
+          <div id="fnbar" style="display:none">
+            <span id="fntext"></span>
+            <button id="changebtn" onclick="event.stopPropagation();openPicker();">
+              Change image
+            </button>
+          </div>
+
+        </div>
+        <!-- end #imgbox -->
+
+        <!-- STEP 3: Analyse button — greyed until image selected -->
+        <button id="abtn" class="btn" onclick="doAnalysis()"
+                style="opacity:.4;cursor:not-allowed;margin-top:14px;">
+          START AI ANALYSIS
+        </button>
+
+        <button class="btn lav" onclick="genReport()" style="margin-top:9px;">
+          Generate PDF Report
+        </button>
+
+        <!-- Loader (hidden) -->
+        <div id="loader" style="display:none;">
+          <div class="spin"></div>
+          Extracting features and classifying...
+        </div>
+
+        <!-- Error box (hidden) -->
+        <div id="ebox" style="display:none;"></div>
+
+        <div style="font-size:.7rem;color:var(--dim);margin-top:14px;
+                    padding-top:12px;border-top:1px solid var(--bdr);line-height:1.85;">
+          <b>CV Acc:</b> 97.56% &nbsp;|&nbsp; <b>Test Acc:</b> 97.50%
+        </div>
+      </div>
+      <!-- end left card -->
+
+      <!-- RIGHT CARD: AI Diagnostics -->
+      <div class="card">
+        <h3><i data-lucide="microscope"></i> AI Diagnostics</h3>
+
+        <!-- Empty state -->
+        <div id="emp" class="emp">
+          <i data-lucide="scan-eye" style="width:44px;height:44px;color:var(--bdr);margin-bottom:13px;"></i>
+          <p style="color:var(--dim);font-size:.88rem;">Awaiting clinical input...</p>
+        </div>
+
+        <!-- Result pane (hidden until prediction done) -->
+        <div id="rpane" style="display:none;">
+
+          <!-- Wound image from server -->
+          <div id="rwrap" style="margin-bottom:13px;display:none;">
+            <img id="rimg" src="" alt="Wound"
+                 style="border-radius:13px;border:2px solid var(--lav);
+                        max-width:100%;display:block;box-shadow:0 8px 24px rgba(0,0,0,.35);">
+          </div>
+
+          <!-- Prediction header -->
+          <div class="ph" id="ph">
+            <div class="pic" id="pic"></div>
+            <div>
+              <div class="pcls" id="pcls"></div>
+              <div class="pconf" id="pconf"></div>
+            </div>
+          </div>
+
+          <!-- Stat boxes -->
+          <div class="sg">
+            <div class="sb" style="border-top:3px solid var(--rose);">
+              <div class="sl" style="color:var(--rose);">Trajectory</div>
+              <div class="sv" id="sdays"></div>
+            </div>
+            <div class="sb" style="border-top:3px solid var(--ok);">
+              <div class="sl" style="color:var(--ok);">Dressing</div>
+              <div class="sv" id="sdress" style="font-size:.82rem;"></div>
+            </div>
+          </div>
+
+          <!-- Probability bars -->
+          <div id="pbars"></div>
+
+          <!-- Stage info -->
+          <div id="sbox" class="stb"></div>
+
+        </div><!-- end rpane -->
+      </div>
+      <!-- end right card -->
+
+    </div><!-- end grid -->
+
+    <!-- Recent predictions -->
+    <div id="rsec" style="display:none;margin-top:4px;">
+      <p style="font-size:.88rem;color:var(--dim);margin-bottom:11px;font-weight:600;">
+        Previous predictions
+      </p>
+      <div id="rlist"></div>
+    </div>
+
+  </div><!-- end dash -->
+
+  <!-- CLINICAL ASSISTANT -->
+  <div id="asst" class="pg">
+    <h1>Clinical Assistant</h1>
+
+    <!-- Topic cards row -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;">
+      <div class="card" style="padding:18px;cursor:pointer;margin-bottom:0;text-align:center;"
+           onclick="quickQ('What dressing should I use?')">
+        <div style="font-size:26px;margin-bottom:8px;">🩹</div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--rose);">Dressings</div>
+        <div style="font-size:.73rem;color:var(--dim);margin-top:4px;">By healing stage</div>
+      </div>
+      <div class="card" style="padding:18px;cursor:pointer;margin-bottom:0;text-align:center;"
+           onclick="quickQ('What foods help wound healing?')">
+        <div style="font-size:26px;margin-bottom:8px;">🥗</div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--rose);">Nutrition</div>
+        <div style="font-size:.73rem;color:var(--dim);margin-top:4px;">Diet for healing</div>
+      </div>
+      <div class="card" style="padding:18px;cursor:pointer;margin-bottom:0;text-align:center;"
+           onclick="quickQ('Signs of infection?')">
+        <div style="font-size:26px;margin-bottom:8px;">🦠</div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--rose);">Infection</div>
+        <div style="font-size:.73rem;color:var(--dim);margin-top:4px;">Warning signs</div>
+      </div>
+      <div class="card" style="padding:18px;cursor:pointer;margin-bottom:0;text-align:center;"
+           onclick="quickQ('How to manage diabetic wounds?')">
+        <div style="font-size:26px;margin-bottom:8px;">💉</div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--rose);">Diabetic wounds</div>
+        <div style="font-size:.73rem;color:var(--dim);margin-top:4px;">Special care tips</div>
+      </div>
+      <div class="card" style="padding:18px;cursor:pointer;margin-bottom:0;text-align:center;"
+           onclick="quickQ('How to clean a wound?')">
+        <div style="font-size:26px;margin-bottom:8px;">🧼</div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--rose);">Wound cleaning</div>
+        <div style="font-size:.73rem;color:var(--dim);margin-top:4px;">Safe technique</div>
+      </div>
+      <div class="card" style="padding:18px;cursor:pointer;margin-bottom:0;text-align:center;"
+           onclick="quickQ('How to manage pain?')">
+        <div style="font-size:26px;margin-bottom:8px;">💊</div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--rose);">Pain relief</div>
+        <div style="font-size:.73rem;color:var(--dim);margin-top:4px;">Safe medications</div>
+      </div>
+    </div>
+
+    <!-- Chat window -->
+    <div class="card">
+      <h3><i data-lucide="bot"></i> AI Wound Care Advisor
+        <span style="margin-left:auto;font-size:.72rem;font-weight:400;
+                     color:var(--ok);display:flex;align-items:center;gap:5px;">
+          <span style="width:7px;height:7px;background:var(--ok);
+                       border-radius:50%;display:inline-block;"></span>
+          Online
+        </span>
+      </h3>
+
+      <div class="cb" id="chatbox">
+        <div class="bm">
+          👋 Hello! I am your AI Wound Care Advisor.<br><br>
+          I can help with <b>dressings</b>, <b>diet &amp; nutrition</b>,
+          <b>infection signs</b>, <b>diabetic wounds</b>,
+          <b>wound cleaning</b> and <b>pain management</b>.<br><br>
+          Click a topic card above or type your question below.
+        </div>
+      </div>
+
+      <div class="chat-row">
+        <input class="chat-inp" id="cinput" type="text"
+               placeholder="Type your wound care question...">
+        <button class="send-btn" onclick="sendChat()">Send ➤</button>
+      </div>
+
+      <div class="chips">
+        <span class="chip" onclick="quickQ('What dressing should I use?')">🩹 Dressing types</span>
+        <span class="chip" onclick="quickQ('What foods help wound healing?')">🥗 Diet advice</span>
+        <span class="chip" onclick="quickQ('Signs of infection?')">🦠 Infection signs</span>
+        <span class="chip" onclick="quickQ('How to manage diabetic wounds?')">💉 Diabetic wounds</span>
+        <span class="chip" onclick="quickQ('How to clean a wound safely?')">🧼 Wound cleaning</span>
+        <span class="chip" onclick="quickQ('How to manage pain?')">💊 Pain relief</span>
+        <span class="chip" onclick="quickQ('What are emergency signs?')">🚨 Emergency signs</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PATIENT HISTORY -->
+  <div id="hist" class="pg">
+    <div style="display:flex;justify-content:space-between;align-items:center;
+                margin-bottom:24px;flex-wrap:wrap;gap:10px;">
+      <h1 style="margin-bottom:0;">Patient Records</h1>
+      <div style="display:flex;gap:9px;">
+        <button class="btn lav" onclick="loadHistory()"
+                style="width:auto;margin-top:0;padding:10px 20px;">Refresh</button>
+        <button class="btn" onclick="window.location='/download_history'"
+                style="width:auto;margin-top:0;padding:10px 20px;">Export CSV</button>
+      </div>
+    </div>
+    <div class="card" style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>Date &amp; Time</th><th>Patient Name</th><th>Age</th>
+              <th>Mobile</th><th>Wound Stage</th><th>Confidence</th></tr>
+        </thead>
+        <tbody id="htbody">
+          <tr><td colspan="6" style="text-align:center;color:var(--dim);padding:26px;">
+            Click Refresh to load records.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EMERGENCY -->
+  <div id="emer" class="pg">
+    <h1>Emergency Response</h1>
+
+    <!-- Emergency call strip -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:22px;">
+      <a href="tel:108" class="btn"
+         style="background:var(--err);border-color:var(--err);margin-top:0;
+                font-size:1rem;padding:16px;text-align:center;border-radius:14px;">
+        📞 108 — Emergency
+      </a>
+      <a href="tel:102" class="btn lav"
+         style="margin-top:0;font-size:1rem;padding:16px;text-align:center;border-radius:14px;">
+        📞 102 — Ambulance
+      </a>
+      <a href="tel:104" class="btn"
+         style="margin-top:0;font-size:1rem;padding:16px;text-align:center;
+                border-radius:14px;border-color:#EF9F27;background:rgba(239,159,39,.15);">
+        📞 104 — Health Helpline
+      </a>
+    </div>
+
+    <div class="grid">
+
+      <!-- LEFT: Hospital Locator -->
+      <div class="card">
+        <h3><i data-lucide="map-pin"></i> Find Hospitals Near You</h3>
+
+        <!-- GPS status box -->
+        <div id="gpsbox" style="display:flex;align-items:center;gap:10px;
+             padding:12px 14px;background:rgba(0,0,0,.2);border-radius:10px;
+             border:1px solid var(--bdr);margin-bottom:18px;font-size:.84rem;">
+          <span id="gpsicon" style="font-size:20px;">📡</span>
+          <span id="gpstxt" style="color:var(--dim);flex:1;">Detecting your location...</span>
+        </div>
+
+        <!-- PRIORITY 1: Government -->
+        <div style="margin-bottom:6px;">
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;
+                      letter-spacing:1px;color:var(--ok);margin-bottom:8px;">
+            Government Hospitals
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;">
+            <button onclick="findHospitals('government hospital')" class="hbtn gov">
+              🏛️ Govt General Hospital Nearby
+            </button>
+            <button onclick="findHospitals('district hospital')" class="hbtn gov">
+              🏛️ District Hospital Nearby
+            </button>
+            <button onclick="findHospitals('government medical college hospital')" class="hbtn gov">
+              🏛️ Govt Medical College / AIIMS Nearby
+            </button>
+            <button onclick="findHospitals('primary health centre PHC')" class="hbtn gov">
+              🏛️ Primary Health Centre (PHC) Nearby
+            </button>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--bdr);margin:16px 0;"></div>
+
+        <!-- PRIORITY 2: Private -->
+        <div>
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;
+                      letter-spacing:1px;color:var(--rose);margin-bottom:8px;">
+            🔶 Priority 2 — Private Hospitals
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;">
+            <button onclick="findHospitals('private hospital')" class="hbtn pvt">
+              🏨 Private Hospital Nearby
+            </button>
+            <button onclick="findHospitals('private clinic nursing home')" class="hbtn pvt">
+              🏥 Clinic / Nursing Home Nearby
+            </button>
+          </div>
+        </div>
+
+        <p style="font-size:.72rem;color:var(--dim);margin-top:14px;line-height:1.7;
+                  padding-top:12px;border-top:1px solid var(--bdr);">
+          ⓘ Uses your exact GPS location — works anywhere in India.
+          Telangana · Andhra Pradesh · Maharashtra · Karnataka · Tamil Nadu · Kerala and all states.
+        </p>
+      </div>
+
+      <!-- RIGHT: State helplines + Warning signs -->
+      <div style="display:flex;flex-direction:column;gap:14px;">
+
+        <!-- State helplines -->
+        <div class="card" style="margin-bottom:0;padding:20px;">
+          <h3 style="margin-bottom:14px;"><i data-lucide="phone-call"></i> State Helplines</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:.83rem;">
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
+                        background:rgba(255,255,255,.05);padding:10px 12px;border-radius:9px;">
+              <span>Andhra Pradesh</span><span style="color:var(--dim);">104 / 108</span>
+              <a href="tel:108" style="color:var(--rose);font-weight:700;white-space:nowrap;">📞 Call</a>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
+                        background:rgba(255,255,255,.05);padding:10px 12px;border-radius:9px;">
+              <span>Telangana</span><span style="color:var(--dim);">104 / 108</span>
+              <a href="tel:108" style="color:var(--rose);font-weight:700;white-space:nowrap;">📞 Call</a>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
+                        background:rgba(255,255,255,.05);padding:10px 12px;border-radius:9px;">
+              <span>Maharashtra</span><span style="color:var(--dim);">108</span>
+              <a href="tel:108" style="color:var(--rose);font-weight:700;white-space:nowrap;">📞 Call</a>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
+                        background:rgba(255,255,255,.05);padding:10px 12px;border-radius:9px;">
+              <span>Karnataka</span><span style="color:var(--dim);">108</span>
+              <a href="tel:108" style="color:var(--rose);font-weight:700;white-space:nowrap;">📞 Call</a>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
+                        background:rgba(255,255,255,.05);padding:10px 12px;border-radius:9px;">
+              <span>Tamil Nadu</span><span style="color:var(--dim);">108</span>
+              <a href="tel:108" style="color:var(--rose);font-weight:700;white-space:nowrap;">📞 Call</a>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;
+                        background:rgba(255,255,255,.05);padding:10px 12px;border-radius:9px;">
+              <span>Kerala</span><span style="color:var(--dim);">108</span>
+              <a href="tel:108" style="color:var(--rose);font-weight:700;white-space:nowrap;">📞 Call</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Warning Signs -->
+        <div class="card" style="margin-bottom:0;border:1px solid rgba(251,113,133,.3);
+                                  background:rgba(251,113,133,.05);">
+          <h3><i data-lucide="alert-circle"></i> Seek Help Immediately</h3>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:10px;">
+            <div style="display:flex;gap:9px;font-size:.83rem;">
+              <span>🔴</span>
+              <div><b style="color:#fca5a5;">Heavy / uncontrolled bleeding</b><br>
+                <span style="color:var(--dim);font-size:.76rem;">Press firmly, elevate limb, call 108</span></div>
+            </div>
+            <div style="display:flex;gap:9px;font-size:.83rem;">
+              <span>🟠</span>
+              <div><b style="color:#fcd34d;">Spreading redness + fever &gt;38.5°C</b><br>
+                <span style="color:var(--dim);font-size:.76rem;">Possible sepsis — urgent care needed</span></div>
+            </div>
+            <div style="display:flex;gap:9px;font-size:.83rem;">
+              <span>🟡</span>
+              <div><b style="color:#fcd34d;">Foul-smelling discharge</b><br>
+                <span style="color:var(--dim);font-size:.76rem;">Deep infection — needs antibiotics</span></div>
+            </div>
+            <div style="display:flex;gap:9px;font-size:.83rem;">
+              <span>⚪</span>
+              <div><b>Loss of sensation around wound</b><br>
+                <span style="color:var(--dim);font-size:.76rem;">Nerve damage — consult immediately</span></div>
+            </div>
+            <div style="display:flex;gap:9px;font-size:.83rem;">
+              <span>🩺</span>
+              <div><b>Wound not healing after 2 weeks</b><br>
+                <span style="color:var(--dim);font-size:.76rem;">May need specialist wound care</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── 1. CONSTANTS FIRST — must be before everything ─────────────────
+var BARCOL = {
+  'Inflammation': '#D85A30',
+  'Proliferation': '#EF9F27',
+  'Maturation':   '#4ade80'
+};
+
+var STCOL = {
+  'Inflammation': { bg:'rgba(207,152,147,.14)', bd:'rgba(207,152,147,.38)', tx:'#f8b4b4' },
+  'Proliferation':{ bg:'rgba(239,159,39,.11)',  bd:'rgba(239,159,39,.38)',  tx:'#fcd34d' },
+  'Maturation':   { bg:'rgba(74,222,128,.09)',  bd:'rgba(74,222,128,.32)',  tx:'#86efac' }
+};
+
+// ── 2. State variables ─────────────────────────────────────────────
+var chosenFile  = null;    // File object after user picks image
+var imageLoaded = false;   // true only after FileReader.onload completes
+var isRunning   = false;   // true while fetch in progress
+var recents     = [];
+
+// ── 3. Init icons ──────────────────────────────────────────────────
+lucide.createIcons();
+
+// ── Welcome / Disclaimer ─────────────────────────────────────────────
+function dismissWelcome(){
+  var w = document.getElementById('wel');
+  w.style.opacity='0';
+  setTimeout(function(){
+    w.style.display='none';
+    document.getElementById('dis').style.display='flex';
+  },800);
+}
+function dismissDisclaimer(){
+  var d=document.getElementById('dis');
+  d.style.transition='.5s'; d.style.opacity='0';
+  setTimeout(function(){ d.style.display='none'; },500);
+}
+
+// ── Clock ────────────────────────────────────────────────────────────
+setInterval(function(){
+  var el=document.getElementById('clk');
+  if(el) el.textContent=new Date().toLocaleDateString()+' // '+new Date().toLocaleTimeString();
+},1000);
+
+// ── Nav ──────────────────────────────────────────────────────────────
+function goPage(el,id){
+  document.querySelectorAll('.ni').forEach(function(n){ n.classList.remove('on'); });
+  el.classList.add('on');
+  document.querySelectorAll('.pg').forEach(function(p){ p.classList.remove('on'); });
+  document.getElementById(id).classList.add('on');
+  if(id==='emer') initGeo();
+  if(id==='hist') loadHistory();
+  lucide.createIcons();
+}
+
+// ── STEP 1: Open file picker ─────────────────────────────────────────
+function openPicker(){
+  document.getElementById('realfile').click();
+}
+
+// ── STEP 2: File chosen — called by onchange on the hidden input ─────
+function onFileChosen(inp){
+  if(!inp || !inp.files || !inp.files[0]) return;
+
+  chosenFile  = inp.files[0];
+  imageLoaded = false;   // reset until reader finishes
+
+  var reader = new FileReader();
+
+  reader.onload = function(e){
+    // Hide prompt, show image
+    document.getElementById('imgprompt').style.display = 'none';
+
+    var img       = document.getElementById('woundimg');
+    img.src       = e.target.result;
+    img.style.display = 'block';
+
+    // Show filename bar
+    document.getElementById('fntext').textContent  = chosenFile.name;
+    document.getElementById('fnbar').style.display = 'flex';
+
+    // Green border = success feedback
+    var box               = document.getElementById('imgbox');
+    box.style.borderColor = 'var(--ok)';
+    box.style.borderStyle = 'solid';
+    box.style.background  = 'rgba(74,222,128,0.05)';
+
+    // Image is fully loaded — safe to analyse now
+    imageLoaded = true;
+
+    // Activate analyse button
+    var btn             = document.getElementById('abtn');
+    btn.style.opacity   = '1';
+    btn.style.cursor    = 'pointer';
+    btn.style.background= 'var(--rose)';
+    btn.style.borderColor='#fff';
+    btn.style.boxShadow = '0 0 26px rgba(207,152,147,.75)';
+    btn.textContent     = 'START AI ANALYSIS ✓';
+  };
+
+  reader.readAsDataURL(chosenFile);
+  clearErr();
+  resetPipe();
+}
+
+// ── ANALYSIS ─────────────────────────────────────────────────────────
+function doAnalysis(){
+  // Guard 1: No file selected at all
+  if(!chosenFile){
+    showErr('Please select a wound image first — click the box above.');
+    return;
+  }
+
+  // Guard 2: File selected but image not fully loaded yet
+  // (user clicked the button before FileReader.onload completed)
+  if(!imageLoaded){
+    showErr('Image is still loading — please wait a moment and try again.');
+    return;
+  }
+
+  // Guard 3: Already running — prevent double submit
+  if(isRunning){
+    showErr('Analysis is already running — please wait.');
+    return;
+  }
+
+  isRunning = true;
+
+  // Update button
+  var btn           = document.getElementById('abtn');
+  btn.textContent   = 'Analysing...';
+  btn.style.opacity = '.6';
+  btn.style.cursor  = 'wait';
+  btn.style.boxShadow='none';
+
+  // Show loader, hide result
+  document.getElementById('loader').style.display = 'block';
+  document.getElementById('emp').style.display    = 'flex';
+  document.getElementById('rpane').style.display  = 'none';
+  clearErr();
+  animPipe();
+
+  // Build FormData
+  var fd = new FormData();
+  fd.append('image',  chosenFile);
+  fd.append('name',   document.getElementById('pt-name').value   || 'Unknown');
+  fd.append('mobile', document.getElementById('pt-mobile').value || '-');
+  fd.append('age',    document.getElementById('pt-age').value    || '-');
+
+  // Send to Flask
+  fetch('/predict', { method:'POST', body:fd })
+    .then(function(resp){
+      return resp.text().then(function(txt){
+        return { status: resp.status, txt: txt };
+      });
+    })
+    .then(function(r){
+      // ── Wrap in try/catch so JS errors are NOT confused with network errors ──
+      try{
+        document.getElementById('loader').style.display = 'none';
+        isRunning = false;
+
+        if(r.status !== 200){
+          showErr('Server error (HTTP '+r.status+'): '+r.txt.slice(0,200));
+          document.getElementById('emp').style.display='flex';
+          resetBtn();
+          return;
+        }
+
+        var data = JSON.parse(r.txt);
+
+        if(data.error){
+          showErr('Prediction error: '+data.error);
+          document.getElementById('emp').style.display='flex';
+          resetBtn();
+          return;
+        }
+
+        // Each call wrapped separately so errors are clearly labelled
+        try{ showResult(data); } catch(e1){
+          console.error('[showResult]', e1);
+          showErr('showResult error: '+e1.message);
+        }
+        try{ addRecent(data); }  catch(e2){ console.error('[addRecent]', e2); }
+        try{ refreshBadge(); }   catch(e3){ console.error('[refreshBadge]', e3); }
+        try{ resetBtn(); }       catch(e4){ console.error('[resetBtn]', e4); }
+
+      } catch(jsErr){
+        document.getElementById('loader').style.display='none';
+        isRunning = false;
+        showErr('Analysis error: '+jsErr.message+' — see browser console (F12)');
+        document.getElementById('emp').style.display='flex';
+        try{ resetBtn(); } catch(e){}
+        console.error('[doAnalysis outer error]', jsErr);
+      }
+    })
+    .catch(function(netErr){
+      // This is a REAL network error (server not running, CORS, etc.)
+      document.getElementById('loader').style.display='none';
+      isRunning = false;
+      showErr('Cannot reach server: '+netErr.message+' — make sure app.py is running.');
+      document.getElementById('emp').style.display='flex';
+      resetBtn();
+      console.error('[doAnalysis network error]', netErr);
+    });
+}
+
+function resetBtn(){
+  var btn = document.getElementById('abtn');
+  if(!btn) return;
+  btn.textContent      = 'ANALYSE AGAIN ✓';
+  btn.style.opacity    = '1';
+  btn.style.cursor     = 'pointer';
+  btn.style.background = 'var(--rose)';
+  btn.style.borderColor= '#fff';
+  btn.style.boxShadow  = '0 0 22px rgba(207,152,147,.5)';
+}
+
+// ── SHOW RESULT ───────────────────────────────────────────────────────
+function showResult(data){
+  try {
+    var cls  = data.predicted_class;
+    var st   = STCOL[cls] || STCOL['Inflammation'];  // safe fallback
+    var info = data.stage_info || {};
+
+    // 1. Wound thumbnail
+    if(data.image_b64){
+      var rimg = document.getElementById('rimg');
+      if(rimg){ rimg.src = 'data:image/jpeg;base64,'+data.image_b64; }
+      var rwrap = document.getElementById('rwrap');
+      if(rwrap){ rwrap.style.display = 'block'; }
+    }
+
+    // 2. Prediction header
+    var ph = document.getElementById('ph');
+    if(ph){ ph.style.background = st.bg; ph.style.border = '1px solid '+st.bd; }
+
+    var pic = document.getElementById('pic');
+    if(pic){ pic.textContent = info.icon || '🔵'; }
+
+    var pcls = document.getElementById('pcls');
+    if(pcls){ pcls.textContent = cls; pcls.style.color = st.tx; }
+
+    var pconf = document.getElementById('pconf');
+    if(pconf){ pconf.textContent =
+      'Confidence: '+data.confidence.toFixed(1)+'%  ·  Typical: '+(info.days||'—')+' days'; }
+
+    // 3. Stats
+    var sdays = document.getElementById('sdays');
+    if(sdays){ sdays.textContent = (info.days||'—')+' days to closure'; }
+
+    var sdress = document.getElementById('sdress');
+    if(sdress){ sdress.textContent = info.dressing||'—'; }
+
+    // 4. Probability bars
+    var pb = '';
+    var sorted = Object.entries(data.all_probs||{}).sort(function(a,b){ return b[1]-a[1]; });
+    sorted.forEach(function(kv){
+      var n=kv[0], p=kv[1];
+      pb += '<div class="pr">'
+          + '<span class="plb">'+n+'</span>'
+          + '<div class="pt"><div class="pf" style="width:'+p+'%;background:'+(BARCOL[n]||'#888')+';"></div></div>'
+          + '<span class="pp">'+p.toFixed(1)+'%</span>'
+          + '</div>';
+    });
+    var pbars = document.getElementById('pbars');
+    if(pbars){ pbars.innerHTML = pb; }
+
+    // 5. Stage info box
+    var sb = document.getElementById('sbox');
+    if(sb){
+      sb.style.background = st.bg;
+      sb.style.border     = '1px solid '+st.bd;
+      sb.style.color      = st.tx;
+      sb.innerHTML = '<div class="str"><span class="stl">Stage:</span><span>'+(info.desc||'')+'</span></div>'
+                   + '<div class="str"><span class="stl">Advice:</span><span>'+(info.advice||'')+'</span></div>';
+    }
+
+    // 6. Show result pane
+    var emp   = document.getElementById('emp');
+    var rpane = document.getElementById('rpane');
+    if(emp)   emp.style.display   = 'none';
+    if(rpane) rpane.style.display = 'block';
+
+  } catch(err) {
+    console.error('[showResult error]', err);
+    showErr('UI Error: '+err.message+' — check browser console (F12) for details.');
+  }
+}
+
+// ── RECENT ────────────────────────────────────────────────────────────
+function addRecent(data){
+  recents.unshift(data);
+  if(recents.length>6) recents.pop();
+  var rsec = document.getElementById('rsec');
+  var rlist = document.getElementById('rlist');
+  if(!rsec || !rlist) return;
+  rsec.style.display='block';
+  var html='';
+  recents.slice(1).forEach(function(r){
+    html+='<div class="hi">'
+         +'<div class="hd" style="background:'+(BARCOL[r.predicted_class]||'#888')+'"></div>'
+         +'<span style="flex:1;font-weight:500;">'+r.predicted_class+'</span>'
+         +'<span style="color:var(--dim);">'+r.confidence.toFixed(1)+'%</span>'
+         +'</div>';
+  });
+  rlist.innerHTML=html;
+}
+
+function refreshBadge(){
+  fetch('/history_count')
+    .then(function(r){return r.json();})
+    .then(function(d){ document.getElementById('hbadge').textContent=d.count; })
+    .catch(function(){});
+}
+
+// pipeline removed
+function animPipe(){}
+function resetPipe(){}
+
+// ── ERRORS ────────────────────────────────────────────────────────────
+function showErr(msg){
+  var e=document.getElementById('ebox');
+  e.textContent='⚠ '+msg; e.style.display='block';
+}
+function clearErr(){ document.getElementById('ebox').style.display='none'; }
+
+// ── CHAT ──────────────────────────────────────────────────────────────
+function sendChat(){
+  var inp = document.getElementById('cinput');
+  var box = document.getElementById('chatbox');
+  if(!inp || !box || !inp.value.trim()) return;
+
+  var q = inp.value.trim();
+  inp.value = '';
+
+  // Add user message
+  box.innerHTML += '<div class="um">'+q+'</div>';
+  box.scrollTop = box.scrollHeight;
+
+  // Show typing indicator
+  var typingId = 'typing_'+Date.now();
+  box.innerHTML += '<div class="typing" id="'+typingId+'">'
+                 + '<span></span><span></span><span></span></div>';
+  box.scrollTop = box.scrollHeight;
+
+  fetch('/chat',{method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({question:q})})
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var el = document.getElementById(typingId);
+      if(el) el.remove();
+      box.innerHTML += '<div class="bm">'+d.answer+'</div>';
+      box.scrollTop = box.scrollHeight;
+    })
+    .catch(function(){
+      var el = document.getElementById(typingId);
+      if(el) el.remove();
+      box.innerHTML += '<div class="bm">⚠ Connection error — make sure app.py is running.</div>';
+      box.scrollTop = box.scrollHeight;
+    });
+}
+function quickQ(q){
+  var inp = document.getElementById('cinput');
+  if(inp){ inp.value = q; }
+  sendChat();
+}
+document.getElementById('cinput').addEventListener('keypress',function(e){
+  if(e.key==='Enter') sendChat();
+});
+
+// ── HISTORY ───────────────────────────────────────────────────────────
+function loadHistory(){
+  fetch('/get_history')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var body=document.getElementById('htbody');
+      if(!data.length){
+        body.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--dim);padding:26px;">No records yet.</td></tr>';
+        return;
+      }
+      var BC={Inflammation:'i',Proliferation:'p',Maturation:'m'};
+      var html='';
+      data.forEach(function(h){
+        html+='<tr>'
+             +'<td>'+h.date+'</td><td><b>'+h.name+'</b></td>'
+             +'<td>'+h.age+'</td><td>'+h.mobile+'</td>'
+             +'<td><span class="badge '+(BC[h.stage]||'')+'">'+h.stage+'</span></td>'
+             +'<td>'+h.confidence+'%</td>'
+             +'</tr>';
+      });
+      body.innerHTML=html;
+      document.getElementById('hbadge').textContent=data.length;
+    })
+    .catch(function(e){ console.error(e); });
+}
+
+function genReport(){
+  var name=document.getElementById('pt-name').value;
+  if(!name){ alert('Enter Patient Name first.'); return; }
+  window.open('/download_history?name='+encodeURIComponent(name)
+    +'&mobile='+document.getElementById('pt-mobile').value
+    +'&age='+document.getElementById('pt-age').value,'_blank');
+}
+
+// ── GEOLOCATION ───────────────────────────────────────────────────────
+var USER_LAT = null;
+var USER_LON = null;
+
+function initGeo(){
+  var txt  = document.getElementById('gpstxt');
+  var icon = document.getElementById('gpsicon');
+  if(!txt) return;
+
+  txt.textContent = 'Detecting your location...';
+
+  if(!navigator.geolocation){
+    txt.innerHTML = '❌ GPS not supported by this browser.';
+    if(icon) icon.textContent = '❌';
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      USER_LAT = pos.coords.latitude;
+      USER_LON = pos.coords.longitude;
+      if(txt){
+        txt.innerHTML = '<span style="color:var(--ok);font-weight:600;">● Location found</span>'
+                      + ' — ' + USER_LAT.toFixed(5) + ', ' + USER_LON.toFixed(5);
+      }
+      if(icon) icon.textContent = '✅';
+    },
+    function(err){
+      USER_LAT = null; USER_LON = null;
+      if(txt){
+        txt.innerHTML = '⚠️ Location denied — '
+                      + '<span style="color:var(--rose);">allow location in browser settings '
+                      + 'to find hospitals near you</span>';
+      }
+      if(icon) icon.textContent = '⚠️';
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+function findHospitals(query){
+  // Always use exact GPS coordinates when available
+  // This ensures results are near the USER, not hardcoded to any city
+  var url;
+  if(USER_LAT !== null && USER_LON !== null){
+    // Zoom 14 = ~2km radius — shows only truly nearby hospitals
+    url = 'https://www.google.com/maps/search/'
+        + encodeURIComponent(query)
+        + '/@' + USER_LAT + ',' + USER_LON + ',14z';
+  } else {
+    // GPS unavailable — Google Maps will use browser/IP location
+    url = 'https://www.google.com/maps/search/'
+        + encodeURIComponent(query + ' near me');
+  }
+  window.open(url, '_blank');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+refreshBadge();
+</script>
+</body>
+</html>
