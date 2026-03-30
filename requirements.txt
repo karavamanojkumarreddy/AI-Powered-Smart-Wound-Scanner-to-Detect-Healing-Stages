@@ -1,8 +1,8 @@
 flask==2.3.3
 gunicorn==21.2.0
-numpy==1.26.4
-opencv-python==4.9.0.80
-scikit-learn==1.4.2
-matplotlib==3.8.4
-pandas==2.2.2
-Pillow==10.3.0
+numpy==1.24.4
+opencv-python==4.8.1.78
+scikit-learn==1.3.2
+matplotlib==3.7.5
+pandas==1.5.3
+Pillow==10.0.1
