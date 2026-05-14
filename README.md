@@ -1,210 +1,200 @@
 # 🩺 AI-Powered Smart Wound Scanner
 
-## 📌 Project Overview
-
-This project is an **AI-based system** designed to automatically detect the **healing stage of wounds** using image processing and machine learning.
-
-Instead of relying on human judgment, the system converts a wound image into **measurable data** and makes a **consistent, objective decision**.
-
-👉 In simple terms:
-**Image → Numbers → Decision**
+> Built by a ECE student who got tired of watching wound assessments depend entirely on which doctor walked into the room.
 
 ---
 
-## 🎯 Problem Statement
+## What is this?
 
-Traditional wound assessment is:
+A machine learning system that looks at a wound photo and tells you what healing stage it's in — **automatically, consistently, and without needing a specialist in the room.**
 
-* Subjective (depends on doctor experience)
-* Inconsistent (different doctors give different results)
-* Manual and time-consuming
-
-This project solves that by providing:
-✔ Automated analysis
-✔ Consistent results
-✔ Fast diagnosis
+No deep learning black box. No GPU server. No internet required.  
+Just a photo → some math → a clear answer.
 
 ---
 
-## ⚙️ System Pipeline
+## Why does this exist?
 
-The system works in 6 steps:
+Here's a frustrating reality in wound care:
 
-1. **Input Image**
+Two doctors look at the same wound. They give different assessments. Both are experienced. Both are confident. Both are wrong about the other.
 
-   * Wound image captured using a smartphone
+This inconsistency isn't a character flaw — it's a structural problem. Human assessment is inherently subjective, especially under time pressure, across experience levels, and in under-resourced settings.
 
-2. **Preprocessing**
-
-   * Resize image (256×256)
-   * Normalize pixel values
-   * Reduce noise
-
-3. **K-Means Clustering (Segmentation)**
-
-   * Separates wound from healthy skin
-   * Uses LAB color space
-
-4. **Feature Extraction**
-
-   * Wound Area
-   * Red Tissue % (healing)
-   * Yellow Tissue % (damage)
-
-5. **Classification (SVM + Ensemble)**
-
-   * Uses SVM with RBF kernel
-   * Supported by Random Forest & Gradient Boosting
-
-6. **Web Dashboard Output**
-
-   * Displays:
-
-     * Healing Stage
-     * Wound Measurements
-     * Clinical Suggestions
+This project doesn't replace doctors. It gives them a second opinion that never has a bad day.
 
 ---
 
-## 🧠 Healing Stages Classified
+## How it works
 
-The model predicts:
+No black magic. The whole pipeline is explainable:
 
-* 🔴 **Inflammation** (early stage)
-* 🟢 **Proliferation** (healing stage)
-* ⚪ **Maturation** (final stage)
+```
+Smartphone Photo
+      ↓
+Resize + Normalize
+      ↓
+K-Means Clustering  ←  separates wound from healthy skin using LAB color space
+      ↓
+Feature Extraction  ←  wound area, red tissue %, yellow tissue %
+      ↓
+SVM + Ensemble      ←  classifies healing stage
+      ↓
+Web Dashboard       ←  shows result + clinical suggestion
+```
 
----
-
-## 📊 Performance
-
-| Metric    | Value     |
-| --------- | --------- |
-| Accuracy  | **97.5%** |
-| Precision | 97.53%    |
-| Recall    | 97.50%    |
-| F1-Score  | 97.49%    |
-
-✔ High accuracy
-✔ Balanced performance
-✔ Reliable predictions
+The model sees what we tell it to look for. There are no hidden layers guessing for us.
 
 ---
 
-## 🧪 Technologies Used
+## The three healing stages it detects
 
-* Python
-* OpenCV
-* NumPy
-* Scikit-learn
-* Flask
+| Stage | What it means | Visual signal |
+|---|---|---|
+| 🔴 Inflammation | Early stage — body fighting infection | Redness, swelling |
+| 🟢 Proliferation | Active healing — new tissue forming | Pink/red granulation tissue |
+| ⚪ Maturation | Final stage — scar tissue forming | Pale, closed wound |
 
 ---
 
-## 🏗️ Project Structure
+## Performance
+
+Tested on a labelled wound image dataset:
+
+| Metric | Score |
+|---|---|
+| Accuracy | 97.5% |
+| Precision | 97.53% |
+| Recall | 97.50% |
+| F1-Score | 97.49% |
+
+The model is balanced across all three classes — it's not just getting easy cases right and fumbling the harder ones.
+
+---
+
+## Tech stack
+
+Nothing exotic. Runs on a basic laptop.
+
+- **Python** — core language
+- **OpenCV** — image processing
+- **NumPy** — numerical operations
+- **Scikit-learn** — SVM, Random Forest, Gradient Boosting
+- **Flask** — web dashboard
+
+No PyTorch. No TensorFlow. No CUDA. Intentionally.
+
+---
+
+## Project structure
 
 ```
 AI-Wound-Scanner/
 │
-├── dataset/
+├── dataset/                   # wound images + labels
+│
 ├── ml/
-│   ├── preprocessing.py
-│   ├── kmeans.py
-│   ├── feature_extraction.py
-│   ├── svm.py
+│   ├── preprocessing.py       # resize, normalize
+│   ├── kmeans.py              # color-based segmentation
+│   ├── feature_extraction.py  # area, tissue ratios
+│   └── svm.py                 # classifier + ensemble
 │
 ├── app/
-│   ├── app.py
-│   ├── templates/
-│   ├── static/
+│   ├── app.py                 # Flask backend
+│   ├── templates/             # HTML pages
+│   └── static/                # CSS, JS
 │
-├── results/
+├── results/                   # output logs, metrics
 ├── README.md
 └── requirements.txt
 ```
 
 ---
 
-## 🚀 How to Run the Project
+## Run it yourself
 
-### Step 1: Clone Repository
-
+**Step 1 — Clone**
 ```bash
 git clone https://github.com/yourusername/AI-Wound-Scanner.git
 cd AI-Wound-Scanner
 ```
 
-### Step 2: Install Requirements
-
+**Step 2 — Install dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 3: Run Application
-
+**Step 3 — Launch**
 ```bash
 python app.py
 ```
 
-### Step 4: Open in Browser
-
+**Step 4 — Open browser**
 ```
 http://127.0.0.1:5000
 ```
 
----
-
-## 🧩 Key Features
-
-✔ Automated wound detection
-✔ Explainable AI (not black-box)
-✔ Fast processing (~0.3 sec)
-✔ Works on CPU (no GPU required)
-✔ Suitable for rural healthcare
+Upload a wound image. Get a result in under a second.
 
 ---
 
-## ⚠️ Limitations
+## What it's good at
 
-* Works on 2D images only
-* Proliferation stage is harder to classify
-* Depends on image quality
-
----
-
-## 🔮 Future Scope
-
-* 3D wound measurement
-* Mobile app (Android/iOS)
-* IoT-based smart bandages
-* Cloud deployment
-* Larger dataset training
+- ✅ Works on a standard laptop CPU — no GPU needed
+- ✅ Processing time ~0.3 seconds per image
+- ✅ Explainable output — you can trace every decision
+- ✅ Useful in low-resource settings (rural clinics, fieldwork)
+- ✅ Consistent — gives the same output for the same input, every time
 
 ---
 
-## 🏥 Real-World Impact
+## Where it falls short
 
-* Reduces human error
-* Improves diagnosis speed
-* Supports doctors in decision-making
-* Enables remote healthcare
+Being honest about this matters more than looking impressive:
 
----
-
-## 👨‍💻 Author
-
-**K. Manoj Kumar Reddy**
-B.Tech – Electronics & Communication Engineering
+- **2D images only** — can't measure wound depth
+- **Image quality dependency** — blurry or poorly lit photos degrade results
+- **Proliferation stage** is the hardest to classify — slight performance dip there
+- **Dataset size** — performance needs validation on larger, more diverse datasets before clinical use
 
 ---
 
-## 📌 Final Thought
+## What's next
 
-This project shows that:
-👉 **Simple + Explainable AI > Complex Black Box (for healthcare)**
+Things worth building if this gets traction:
+
+- [ ] 3D wound volume estimation
+- [ ] Android/iOS mobile app
+- [ ] Cloud deployment for remote access
+- [ ] IoT integration with smart bandages
+- [ ] Training on larger, more diverse clinical datasets
 
 ---
 
-## ⭐ If you like this project
+## The design philosophy
 
-Give it a ⭐ on GitHub!
+This project leans into one idea:
+
+> **A system you can explain and trust beats a system that's accurate but opaque.**
+
+In healthcare, "I don't know why it said that" is not acceptable. Every feature this model uses — tissue color ratios, wound area, cluster separation — has a clinical reason to exist. If it's wrong, you can find out why.
+
+---
+
+## About
+
+**K. Manoj Kumar Reddy**  
+B.Tech — Electronics & Communication Engineering
+
+This was a final year project. The goal was never to build something flashy. It was to build something that could actually be handed to a nurse in a rural clinic and trusted.
+
+---
+
+## Contributing
+
+Found a bug? Have a better feature extraction idea? Want to test it on a new dataset?  
+Open an issue or submit a PR. Serious contributions welcome.
+
+---
+
+*If this helped you or gave you ideas for your own work — a star goes a long way. ⭐*
